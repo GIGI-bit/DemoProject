@@ -30,8 +30,7 @@ namespace DemoProject.Controllers
                 {
                     AgeRange = l.AgeRange,
                     Profession = l.Profession,
-                    UsagePurpose = l.UsagePurpose,
-                    UserId =l.UserId,
+                    UsagePurpose = l.UsagePurpose, 
                 };
             });
             return Ok(items);

@@ -1,5 +1,7 @@
 ﻿using DemoProject.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using TaskFlow.DataAccess.Abstract;
 using TaskFlow.Entities.Models;
 
@@ -20,36 +22,24 @@ namespace DemoProject.Controllers
             _projectService = projectService;
             _userService = userService;
         }
-        //url-den gelen token
-        private async Task<User> GetUserAsync()
-        {
-            var tokenFromHeader = HttpContext.Request.Headers["Authorization"].FirstOrDefault();
 
-            if (string.IsNullOrEmpty(tokenFromHeader) || !tokenFromHeader.StartsWith("Bearer "))
-            {
-                return null;
-            }
-
-            var tokenValue = tokenFromHeader.Substring("Bearer ".Length).Trim();
-            var user = await _userService.GetUserByToken(tokenValue);
-
-            return user;
-        }
-
-        
+        [Authorize]
         [HttpGet("UserProjects")]
         public async Task<IActionResult> GetUserProjects()
         {
-            var user = await GetUserAsync();
 
-            if (user == null)
+            var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            var id = int.Parse(userId);
+            var item = await _userService.GetUserById(id);
+            if (userId == null)
             {
                 return Unauthorized("Invalid token or user not found.");
             }
 
             var projects = await _projectService.GetProjects();
             var userProjects = projects
-                .Where(p => p.CreatedById == user.Id)
+                .Where(p => p.CreatedById == id)
                 .Select(p => new ProjectDto
                 {
                     CreatedById = p.CreatedById,
@@ -60,13 +50,20 @@ namespace DemoProject.Controllers
 
             return Ok(userProjects);
         }
-
+        [Authorize]
 
         [HttpGet("UserProjectCount")]
         public async Task<IActionResult> GetUserProjectCount()
         {
-            var user = await GetUserAsync();
-            var count = await _projectService.GetUserProjectCount(user.Id);
+            var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            var id = int.Parse(userId);
+            var item = await _userService.GetUserById(id);
+            if (userId == null)
+            {
+                return Unauthorized("Invalid token or user not found.");
+            }
+            var count = await _projectService.GetUserProjectCount(item.Id);
 
             return Ok(count);
         }

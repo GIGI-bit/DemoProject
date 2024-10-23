@@ -13,8 +13,6 @@ namespace TaskFlow.Entities.Models
         public int Id { get; set; }
         public string? AgeRange { get; set; }
         public string? Profession { get; set; }
-        public string? UsagePurpose { get; set; }
-        public int? UserId { get; set; }
-        public virtual User? User { get; set; }
+        public string? UsagePurpose { get; set; } 
     }
 }

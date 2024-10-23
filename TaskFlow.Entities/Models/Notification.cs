@@ -12,7 +12,15 @@ namespace TaskFlow.Entities.Models
     { 
         public string? Text { get; set; } 
         public int? UserId { get; set; } 
-        public virtual User? User { get; set; }  
+        public bool IsCalendarMessage { get; set; } 
+        public virtual User? User { get; set; }
+        public Notification()
+        {
+            IsCalendarMessage = false;
+        }
+
+
+
 
     }
 }

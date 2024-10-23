@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TaskFlow.Entities.Data;
 
@@ -11,9 +12,11 @@ using TaskFlow.Entities.Data;
 namespace TaskFlow.Entities.Migrations
 {
     [DbContext(typeof(TaskFlowContext))]
-    partial class TaskFlowContextModelSnapshot : ModelSnapshot
+    [Migration("20241023183333_Init2")]
+    partial class Init2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -119,9 +122,6 @@ namespace TaskFlow.Entities.Migrations
 
                     b.Property<DateTime>("CreateDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsCalendarMessage")
-                        .HasColumnType("bit");
 
                     b.Property<string>("Text")
                         .HasColumnType("nvarchar(max)");

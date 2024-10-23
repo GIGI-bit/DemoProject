@@ -10,8 +10,7 @@ namespace TaskFlow.DataAccess.Abstract
     public interface IQuizService
     {
         Task Add(Quiz quiz);    
-        Task Update(Quiz quiz);
-        Task<Quiz> GetQuizByUserId(int userId);
+        Task Update(Quiz quiz); 
         Task<List<Quiz>> Quizzes(); 
     }
 }

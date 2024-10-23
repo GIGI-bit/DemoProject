@@ -1,5 +1,7 @@
 ﻿using DemoProject.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using TaskFlow.Business.Abstract;
 using TaskFlow.DataAccess.Abstract;
 using TaskFlow.DataAccess.Concrete;
@@ -24,46 +26,140 @@ namespace DemoProject.Controllers
         }
 
 
-        //url-den gelen token
-        private async Task<User> GetUserAsync()
-        {
-            var tokenFromHeader = HttpContext.Request.Headers["Authorization"].FirstOrDefault();
 
-            if (string.IsNullOrEmpty(tokenFromHeader) || !tokenFromHeader.StartsWith("Bearer "))
-            {
-                return null;
-            }
-
-            var tokenValue = tokenFromHeader.Substring("Bearer ".Length).Trim();
-            var user = await userService.GetUserByToken(tokenValue);
-
-            return user;
-        }
-
+        [Authorize]
         // GET: api/<NotificationController>
+        //userin bildirimleri
         [HttpGet("Notifications")]
         public async Task<IActionResult> Get()
         {
-            var list = await notificationService.GetNotifications();
-            var items = list.Select(p =>
+            var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+           if (userId == null)
             {
-                return new NotificationDto
+                return BadRequest("User not authenticated.");
+            }
+
+            if (!int.TryParse(userId, out int id))
+            {
+                return BadRequest("Invalid user ID.");
+            }
+            var list = await notificationService.GetNotifications();
+            var items = list.Where(i => i.UserId == id && i.IsCalendarMessage == false).Select(p =>
+            {
+                return new
                 {
                     Text = p.Text,
-                    UserId = p.UserId,
+                    Username = p.User?.UserName,
                 };
             });
             return Ok(items);
         }
+        [Authorize]
+        [HttpGet("TwoNotification")]
+        public async Task<IActionResult> TakeTwoMessage()
+        {
+            var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId == null)
+            {
+                return BadRequest("User not authenticated.");
+            }
+
+            if (!int.TryParse(userId, out int id))
+            {
+                return BadRequest("Invalid user ID.");
+            }
+            var list = await notificationService.GetNotifications();
+            var items = list.Where(i => i.UserId == id && i.IsCalendarMessage == false).OrderByDescending(p => p.Id).Take(2).
+                Select(p =>
+            {
+                return new
+                {
+                    Text = p.Text,
+                    Username = p.User?.UserName,
+                };
+            });
+            return Ok(items);
+        }
+
+        [Authorize]
+        [HttpGet("CalendarNotifications")]
+        public async Task<IActionResult> GetCalendarNotifications()
+        {
+            var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId == null)
+            {
+                return BadRequest("User not authenticated.");
+            }
+
+            if (!int.TryParse(userId, out int id))
+            {
+                return BadRequest("Invalid user ID.");
+            }
+            var list = await notificationService.GetNotifications();
+            var items = list.Where(i => i.UserId == id && i.IsCalendarMessage == true).Select(p =>
+            {
+                return new
+                {
+                    Text = p.Text,
+                    Username = p.User?.UserName,
+                };
+            });
+            return Ok(items);
+        }
+        [Authorize]
+        [HttpGet("TwoCalendarNotification")]
+        public async Task<IActionResult> TakeTwoCalendarNotification()
+        {
+            var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId == null)
+            {
+                return BadRequest("User not authenticated.");
+            }
+
+            if (!int.TryParse(userId, out int id))
+            {
+                return BadRequest("Invalid user ID.");
+            }
+
+            var list = await notificationService.GetNotifications();
+            var items = list.Where(i => i.UserId == id && i.IsCalendarMessage)
+                            .OrderByDescending(p => p.Id)
+                            .Take(2)
+                            .Select(p => new
+                            {
+                                Text = p.Text,
+                                Username = p.User?.UserName,
+                            });
+
+            return Ok(items);
+        }
+
+
+        [Authorize]
+        //userin bildirim sayi
         [HttpGet("UserNotificationCount")]
         public async Task<IActionResult> GetCount()
         {
-            var user= await GetUserAsync(); 
+            var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var id = int.Parse(userId);
+
             var list = await notificationService.GetNotifications();
-          
-            return Ok(list.Where(l=>l.UserId==user.Id).Count());
+
+            return Ok(list.Where(l => l.UserId == id && l.IsCalendarMessage == false).Count());
         }
 
+        [Authorize]
+        //userin calendar ucun olan bildirim sayi
+        [HttpGet("CalendarNotificationCount")]
+        public async Task<IActionResult> GetCalendarNotificationCount()
+        {
+            var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var id = int.Parse(userId);
+
+            var list = await notificationService.GetNotifications();
+
+            return Ok(list.Where(l => l.UserId == id && l.IsCalendarMessage == true).Count());
+        }
 
 
         // POST api/<NotificationController>

@@ -54,71 +54,37 @@ namespace DemoProject.Controllers
         [HttpPost("login")]
         public async Task<ActionResult> Login([FromBody] UserForLogin userDto)
         {
-
             var user = await _userService.Login(userDto.Username, userDto.Password);
+            if (user == null)
+            {
+                return Unauthorized("Invalid username or password.");
+            }
+
             var tokenHandler = new JwtSecurityTokenHandler();
-
             var key = Encoding.ASCII.GetBytes(_configuration.GetSection("AppSettings:Token").Value);
-
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = new ClaimsIdentity(new Claim[] {
-                    new Claim(ClaimTypes.NameIdentifier,user.Id.ToString()),
-                    new Claim(ClaimTypes.Name,user.UserName)
+                Subject = new ClaimsIdentity(new Claim[]
+                {
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Name, user.UserName)
                 }),
                 Expires = DateTime.Now.AddDays(1),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha512Signature)
             };
-            if (user == null) return Unauthorized("Invalid username or password.");
+
             var token = tokenHandler.CreateToken(tokenDescriptor);
             var tokenString = tokenHandler.WriteToken(token);
             CurrentUser = user.Id;
+
             return Ok(new
             {
                 Token = tokenString,
                 User = new
                 {
                     Id = user.Id,
-                    Username = user.UserName, 
-
+                    Username = user.UserName,
                 }
-            });
-
-        }
-
-        [HttpGet("FindCurrentUserForToken")]
-        public async Task<IActionResult> CurrentUserForToken(string token)
-        {
-            var user = _userService.GetUserByToken(token);
-
-            if (user != null)
-            {
-                return Ok(new
-                {
-                    Username = user.Result.UserName,
-                });
-            }
-            else
-            {
-                return BadRequest(new { });
-            }
-        }
-
-        [HttpGet("RouteToQuiz")]
-        public async Task<IActionResult> CheckQuizForm()
-        {
-            var item = await _quizService.GetQuizByUserId(CurrentUser);
-
-            if (item == null)
-            {
-                return Ok(new
-                {
-                    Check = true,//quiz sehifesi acilsin
-                });
-            }
-            return Ok(new
-            {
-                Check = false,//ana sehifeye kecsin
             });
         }
 
@@ -143,7 +109,8 @@ namespace DemoProject.Controllers
                 username = item.UserName, 
                 firstname=item.Firstname,
                 lastname=item.Lastname,
-                email=item.Email,   
+                email=item.Email, 
+                path=item.Image,
 
             });
         }

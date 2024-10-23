@@ -1,5 +1,7 @@
 ﻿using DemoProject.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using TaskFlow.Business.Abstract;
 using TaskFlow.Business.Concrete;
 using TaskFlow.Entities.Models;
@@ -20,44 +22,85 @@ namespace DemoProject.Controllers
         }
 
         // GET: api/<MessageController>
-        [HttpGet]
+        [Authorize]
+        [HttpGet("UserMessage")]
         public async Task<IActionResult> Get()
         {
+            var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId == null)
+            {
+                return BadRequest("User not authenticated.");
+            }
+
+            if (!int.TryParse(userId, out int id))
+            {
+                return BadRequest("Invalid user ID.");
+            }
+
             var list = await messageService.GetMessages();
             if (list == null) return NotFound();
 
-            var items = list.Select(c =>
+            var items = list.Where(i => i.ReceiverId == id).Select(c =>
             {
-                return new MessageDto
+                return new
                 {
-                    ReceiverId = c.ReceiverId,
-                    SenderId = c.SenderId,
+                    ReceiverName = c.Receiver?.UserName,
+                    SenderName = c.Sender?.UserName,
+                    Path = c.Sender?.Image,
                     Text = c.Text,
-                    SentDate=DateTime.Now,
+                    SentDate = c.SentDate,
                 };
 
             });
             return Ok(items);
         }
 
-        // GET api/<MessageController>/5
-        [HttpGet("{id}")]
-        public async Task<IActionResult> Get(int id)
+
+        [HttpGet("TwoMessage")]
+        public async Task<IActionResult> TakeTwoMessage()
         {
-            var item = await messageService.GetMessageById(id);
-            if (item == null)
+            var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId == null)
             {
-                return NotFound();
+                return BadRequest("User not authenticated.");
             }
-            var project = new MessageDto
+
+            if (!int.TryParse(userId, out int id))
             {
-                ReceiverId = item.ReceiverId,
-                SenderId = item.SenderId,
-                Text = item.Text,
-                SentDate = item.SentDate,
-            };
-            return Ok(project);
+                return BadRequest("Invalid user ID.");
+            }
+
+            var list = await messageService.GetMessages();
+            var items = list.Where(i => i.ReceiverId == id).OrderByDescending(p => p.Id).Take(2)
+                .Select(c => new
+            {
+                ReceiverName = c.Receiver?.UserName,
+                SenderName = c.Sender?.UserName,
+                Path=c.Sender?.Image,
+                Text = c.Text,
+                SentDate = c.SentDate,
+            });
+
+            return Ok(items);
         }
+
+
+
+
+        [Authorize]
+        //userin bildirim sayi
+        [HttpGet("UserMessageCount")]
+        public async Task<IActionResult> GetCount()
+        {
+            var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var id = int.Parse(userId);
+
+            var list = await messageService.GetMessages();
+
+            return Ok(list.Where(l => l.ReceiverId == id).Count());
+        }
+
+
 
         // POST api/<MessageController>
         [HttpPost]
@@ -74,7 +117,7 @@ namespace DemoProject.Controllers
             return Ok(item);
         }
 
-     
+
 
         // DELETE api/<MessageController>/5
         [HttpDelete("{id}")]

@@ -22,10 +22,7 @@ namespace TaskFlow.DataAccess.Concrete
             await dal.Add(quiz);    
         }
 
-        public async Task<Quiz> GetQuizByUserId(int userId)
-        {
-          return  await dal.GetById(p => p.UserId == userId);
-        }
+        
 
         public async Task<List<Quiz>> Quizzes()
         {

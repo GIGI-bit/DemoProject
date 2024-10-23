@@ -10,6 +10,10 @@ namespace TaskFlow.Entities.Base
     public class BaseEntity
     {
         public int Id { get; set; }
-        public DateTime CreateDate {  get; set; }= DateTime.UtcNow;
+        public DateTime CreateDate {  get; set; }
+        public BaseEntity()
+        {
+            CreateDate = DateTime.UtcNow;
+        }
     }
 }
